@@ -1,16 +1,37 @@
 import { useState } from "react";
+import { transform } from "ol/proj";
+
 import Button from "@material-ui/core/Button";
 import Menu from "@material-ui/core/Menu";
 import MenuItem from "@material-ui/core/MenuItem";
 
 export default function PositionedMenu(prop) {
   const [anchorEl, setAnchorEl] = useState(null);
+  const [lastProj, setLastProj] = useState(prop.projection);
+
   const open = Boolean(anchorEl);
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
   const handleClose = (evt) => {
-    if (evt.target.id) prop.setProjection(evt.target.id);
+    if (evt.target.id && lastProj !== evt.target.id) {
+      let xymin, xymax;
+      prop.setProjection(evt.target.id);
+
+      if (evt.target.id === "EPSG:4326") {
+        xymin = transform([prop.minX, prop.minY], lastProj, "EPSG:4326");
+        xymax = transform([prop.maxX, prop.maxY], lastProj, "EPSG:4326");
+      } else if (evt.target.id === "EPSG:3857") {
+        xymin = transform([prop.minX, prop.minY], lastProj, "EPSG:3857");
+        xymax = transform([prop.maxX, prop.maxY], lastProj, "EPSG:3857");
+      }
+      prop.setMinX(xymin[0]);
+      prop.setMaxX(xymax[0]);
+      prop.setMinY(xymin[1]);
+      prop.setMaxY(xymax[1]);
+
+      setLastProj(evt.target.id);
+    }
     setAnchorEl(null);
   };
 

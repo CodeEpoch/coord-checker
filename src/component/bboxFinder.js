@@ -61,18 +61,14 @@ function BBoxFind() {
 
   function createBBox(extent) {
     // [xmin,xmax,ymin,ymax]
-    const xymin = transform(
-      [extent.minX, extent.minY],
-      "EPSG:4326",
-      "EPSG:3857"
-    );
-    const xymax = transform(
-      [extent.maxX, extent.maxY],
-      "EPSG:4326",
-      "EPSG:3857"
-    );
-    // const xymin = [extent.minX, extent.minY];
-    // const xymax = [extent.maxX, extent.maxY];
+    let xymin, xymax;
+    if (projection === "EPSG:4326") {
+      xymin = transform([extent.minX, extent.minY], "EPSG:4326", "EPSG:3857");
+      xymax = transform([extent.maxX, extent.maxY], "EPSG:4326", "EPSG:3857");
+    } else if (projection === "EPSG:3857") {
+      xymin = [extent.minX, extent.minY];
+      xymax = [extent.maxX, extent.maxY];
+    }
     extent = [xymin[0], xymin[1], xymax[0], xymax[1]]; // [left, bottom, right, top]
 
     const geojsonObject = {
@@ -153,6 +149,14 @@ function BBoxFind() {
           <PositionedMenu
             projection={projection}
             setProjection={setProjection}
+            minX={minX}
+            maxX={maxX}
+            minY={minY}
+            maxY={maxY}
+            setMinX={setMinX}
+            setMaxX={setMaxX}
+            setMinY={setMinY}
+            setMaxY={setMaxY}
           />
           <Box
             component="form"
