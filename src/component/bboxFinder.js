@@ -14,6 +14,7 @@ import PositionedMenu from "./bboxFinder/menu";
 
 //css
 import Button from "@material-ui/core/Button";
+import Container from "@material-ui/core/Container";
 import { Box, TextField } from "@material-ui/core";
 
 function BBoxFind() {
@@ -148,7 +149,7 @@ function BBoxFind() {
         </div>
 
         {/* BBox extent */}
-        <div>
+        <Container>
           <PositionedMenu
             projection={projection}
             setProjection={setProjection}
@@ -200,6 +201,7 @@ function BBoxFind() {
                   }}
                 />
               </div>
+              <br />
               {/* bottom right */}
               <div>
                 <TextField
@@ -247,7 +249,7 @@ function BBoxFind() {
               Create BBox
             </Button>
           </Box>
-        </div>
+        </Container>
       </div>
     </div>
   );
