@@ -1,4 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
+import CoordTrans from "./coordTrans";
+import PositionedMenu from "./bboxFinder/menu";
+
+// ol stuff
 import "ol/ol.css";
 import OSM from "ol/source/OSM";
 import Map from "ol/Map";
@@ -10,11 +14,9 @@ import GeoJSON from "ol/format/GeoJSON";
 import { transform } from "ol/proj";
 import { toStringXY } from "ol/coordinate";
 import { fromExtent } from "ol/geom/Polygon";
-import PositionedMenu from "./bboxFinder/menu";
 
 //css
 import Button from "@material-ui/core/Button";
-import Container from "@material-ui/core/Container";
 import { Box, TextField } from "@material-ui/core";
 
 function BBoxFind() {
@@ -138,6 +140,7 @@ function BBoxFind() {
   return (
     <div>
       <div ref={mapElement} className="map"></div>
+      <CoordTrans />
 
       <div className="bot-bar">
         <div className="clicked-coord-label">
@@ -145,7 +148,7 @@ function BBoxFind() {
         </div>
 
         {/* BBox extent */}
-        <Container>
+        <div className="coords-input">
           <PositionedMenu
             projection={projection}
             setProjection={setProjection}
@@ -253,7 +256,7 @@ function BBoxFind() {
               Create BBox
             </Button>
           </Box>
-        </Container>
+        </div>
       </div>
     </div>
   );
