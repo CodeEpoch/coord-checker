@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
-import CoordTrans from "./coordTrans";
-import PositionedMenu from "./bboxFinder/menu";
+import CoordTrans from "../coordTrans/coordTrans";
+import PositionedMenu from "./menu";
+import { get as getProjection, getTransform } from "ol/proj";
 
 // ol stuff
 import "ol/ol.css";
@@ -14,6 +15,7 @@ import GeoJSON from "ol/format/GeoJSON";
 import { transform } from "ol/proj";
 import { toStringXY } from "ol/coordinate";
 import { fromExtent } from "ol/geom/Polygon";
+import { applyTransform } from "ol/extent";
 
 //css
 import Button from "@material-ui/core/Button";
@@ -54,25 +56,23 @@ function BBoxFind() {
       }),
     });
 
-    // initialMap.on("pointermove", handleMouseMove);
+    initialMap.on("click", handleMouseClick);
 
     // save map and vector layer references to state
     setMap(initialMap);
     setFeaturesLayer(initalFeaturesLayer);
   }, []);
 
-  function createBBox(extent) {
+  function createBBox(extent, fromTrans = false) {
     // [xmin,xmax,ymin,ymax]
     let xymin, xymax;
-    if (projection === "EPSG:4326") {
-      xymin = transform([extent.minX, extent.minY], "EPSG:4326", "EPSG:3857");
-      xymax = transform([extent.maxX, extent.maxY], "EPSG:4326", "EPSG:3857");
-    } else if (projection === "EPSG:3857") {
-      xymin = [extent.minX, extent.minY];
-      xymax = [extent.maxX, extent.maxY];
-    }
-    extent = [xymin[0], xymin[1], xymax[0], xymax[1]]; // [left, bottom, right, top]
+    if (fromTrans) {
+    } else {
+      xymin = transform([extent.minX, extent.minY], projection, "EPSG:3857");
+      xymax = transform([extent.maxX, extent.maxY], projection, "EPSG:3857");
 
+      extent = [xymin[0], xymin[1], xymax[0], xymax[1]]; // [left, bottom, right, top]
+    }
     const geojsonObject = {
       type: "FeatureCollection",
       crs: {
@@ -115,13 +115,13 @@ function BBoxFind() {
   }
 
   // mouse move handler
-  const handleMouseMove = (event) => {
-    setSelectedCoord(transform(event.coordinate, "EPSG:3857", "EPSG:4326"));
+  const handleMouseClick = (event) => {
+    console.log(transform(event.coordinate, "EPSG:3857", "EPSG:4326"));
+    // setSelectedCoord(transform(event.coordinate, "EPSG:3857", "EPSG:4326"));
   };
 
   const handleSubmit = (extent) => {
     let msg = "";
-    console.log("handleSubmit", extent);
     Object.keys(extent).forEach((key) => {
       if (extent[key] !== "" || extent[key] === 0) {
         extent[key] = Number(extent[key]);
@@ -137,10 +137,41 @@ function BBoxFind() {
     createBBox(extent);
   };
 
+  // https://openlayers.org/en/latest/examples/reprojection-by-code.html
+  function reproject(code, bbox) {
+    console.log(code, bbox);
+    const newProj = getProjection(code);
+    const fromLonLat = getTransform("EPSG:4326", newProj);
+
+    let worldExtent = [bbox[1], bbox[2], bbox[3], bbox[0]];
+    newProj.setWorldExtent(worldExtent);
+
+    // approximate calculation of projection extent,
+    // checking if the world extent crosses the dateline
+    if (bbox[1] > bbox[3]) {
+      worldExtent = [bbox[1], bbox[2], bbox[3] + 360, bbox[0]];
+    }
+    const extent = applyTransform(worldExtent, fromLonLat, undefined, 8);
+    newProj.setExtent(extent);
+    const newView = new View({
+      projection: newProj,
+    });
+    map.setView(newView);
+    newView.fit(extent);
+  }
+
   return (
     <div>
       <div ref={mapElement} className="map"></div>
-      <CoordTrans />
+      <CoordTrans
+        curProj={projection}
+        extent={[minX, minY, maxX, maxY]}
+        minX={minX}
+        maxX={maxX}
+        minY={minY}
+        maxY={maxY}
+        reproject={reproject}
+      />
 
       <div className="bot-bar">
         <div className="clicked-coord-label">
@@ -171,7 +202,7 @@ function BBoxFind() {
             autoComplete="off"
             width="500"
           >
-            {/* Coord Input */}
+            {/* Coord Inputs */}
             <div>
               {/* top left */}
               <div>

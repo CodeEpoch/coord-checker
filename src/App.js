@@ -1,5 +1,5 @@
 import "./App.css";
-import BBoxFind from "./component/bboxFinder";
+import BBoxFind from "./component/bboxFinder/bboxFinder";
 
 function App() {
   return (

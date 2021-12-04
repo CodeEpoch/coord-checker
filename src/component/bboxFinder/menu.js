@@ -18,17 +18,14 @@ export default function PositionedMenu(prop) {
       let xymin, xymax;
       prop.setProjection(evt.target.id);
 
-      if (evt.target.id === "EPSG:4326") {
-        xymin = transform([prop.minX, prop.minY], lastProj, "EPSG:4326");
-        xymax = transform([prop.maxX, prop.maxY], lastProj, "EPSG:4326");
-      } else if (evt.target.id === "EPSG:3857") {
-        xymin = transform([prop.minX, prop.minY], lastProj, "EPSG:3857");
-        xymax = transform([prop.maxX, prop.maxY], lastProj, "EPSG:3857");
+      if (evt.target.id) {
+        xymin = transform([prop.minX, prop.minY], lastProj, evt.target.id);
+        xymax = transform([prop.maxX, prop.maxY], lastProj, evt.target.id);
+        prop.setMinX(xymin[0]);
+        prop.setMaxX(xymax[0]);
+        prop.setMinY(xymin[1]);
+        prop.setMaxY(xymax[1]);
       }
-      prop.setMinX(xymin[0]);
-      prop.setMaxX(xymax[0]);
-      prop.setMinY(xymin[1]);
-      prop.setMaxY(xymax[1]);
 
       setLastProj(evt.target.id);
     }
