@@ -1,5 +1,5 @@
 import * as React from "react";
-import { transform, transformExtent } from "ol/proj";
+import { transformExtent } from "ol/proj";
 import proj4 from "proj4";
 import { register } from "ol/proj/proj4";
 
@@ -17,6 +17,7 @@ import Snackbar from "@material-ui/core/Snackbar";
 
 export default function CoordTrans(prop) {
   const [state, setState] = React.useState(false);
+  const [searched, setSearched] = React.useState(false);
   const [openSnackbar, setOpenSnackbar] = React.useState(false);
   const [msg, setMsg] = React.useState("Copied");
   const [searchProj, setSearchProj] = React.useState("");
@@ -24,7 +25,6 @@ export default function CoordTrans(prop) {
   // const projections = Object.keys(PROJS);
   const projections = [
     ["EPSG:3857", "WGS 84 / Pseudo-Mercator", [85.06, -180, -85.06, 180]],
-    ["EPSG:4326", "WGS 84 ", [90, -180, -90, 180]],
   ];
 
   function search(query) {
@@ -52,7 +52,6 @@ export default function CoordTrans(prop) {
                 bbox &&
                 bbox.length === 4
               ) {
-                console.log("bbox", bbox);
                 searchResults.push({ code, name, proj4def, bbox });
               }
             }
@@ -61,6 +60,7 @@ export default function CoordTrans(prop) {
         } else {
           setSearchResults([]);
         }
+        setSearched(true);
       });
   }
 
@@ -102,10 +102,6 @@ export default function CoordTrans(prop) {
     <div key={newProjCode}>
       <ListItem>
         <Tooltip title={name} placement="left">
-          {/* <ListItemText
-            primary={newProjCode}
-            secondary={`[${extent.join(", ")}]`}
-          /> */}
           <div>
             <div className="item-head">
               <span className="prim">{newProjCode}</span>
@@ -135,8 +131,9 @@ export default function CoordTrans(prop) {
   const drawerContent = () => (
     <Box sx={{ width: 250 }}>
       <List>
-        {searchResults.length !== 0
-          ? searchResults.map((result, index) =>
+        {searched ? (
+          searchResults.length !== 0 ? (
+            searchResults.map((result, index) =>
               content(
                 result["name"],
                 "EPSG:" + result["code"],
@@ -144,9 +141,16 @@ export default function CoordTrans(prop) {
                 result["bbox"]
               )
             )
-          : projections.map((proj, index) =>
-              content(proj[1], proj[0], projTransform(proj[0]))
-            )}
+          ) : (
+            <ListItem>
+              <div className="secnd"> No projection found. </div>
+            </ListItem>
+          )
+        ) : (
+          projections.map((proj, index) =>
+            content(proj[1], proj[0], projTransform(proj[0]), proj[2])
+          )
+        )}
       </List>
     </Box>
   );
@@ -170,6 +174,7 @@ export default function CoordTrans(prop) {
           <TextField
             id="project-search"
             size="small"
+            placeholder="3857"
             style={{ width: 150 }}
             value={searchProj}
             onChange={(evt) => {

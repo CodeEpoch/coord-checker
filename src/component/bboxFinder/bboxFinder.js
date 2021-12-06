@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import CoordTrans from "../coordTrans/coordTrans";
-import PositionedMenu from "./menu";
 import { get as getProjection, getTransform } from "ol/proj";
+import { transformExtent } from "ol/proj";
 
 // ol stuff
 import "ol/ol.css";
@@ -12,20 +12,17 @@ import TileLayer from "ol/layer/Tile";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import GeoJSON from "ol/format/GeoJSON";
-import { transform } from "ol/proj";
-import { toStringXY } from "ol/coordinate";
 import { fromExtent } from "ol/geom/Polygon";
 import { applyTransform } from "ol/extent";
 
 //css
 import Button from "@material-ui/core/Button";
-import { Box, TextField } from "@material-ui/core";
+import { Box, TextField, Typography } from "@material-ui/core";
 
 function BBoxFind() {
   const [map, setMap] = useState();
   const [featuresLayer, setFeaturesLayer] = useState();
   const [projection, setProjection] = useState("EPSG:4326");
-  const [selectedCoord, setSelectedCoord] = useState();
   const [minX, setMinX] = useState(-64.4136974478633);
   const [maxY, setMaxY] = useState(45.9488267828191);
   const [maxX, setMaxX] = useState(0);
@@ -50,7 +47,7 @@ function BBoxFind() {
       ],
       target: mapElement.current,
       view: new View({
-        projection: "EPSG:3857",
+        projection: "EPSG:4326",
         center: [0, 0],
         zoom: 2,
       }),
@@ -63,22 +60,23 @@ function BBoxFind() {
     setFeaturesLayer(initalFeaturesLayer);
   }, []);
 
-  function createBBox(extent, fromTrans = false) {
+  // remake poly
+  useEffect(() => {
+    if (featuresLayer) createBBox({ minX, maxY, maxX, minY });
+  }, [projection]);
+
+  function createBBox(extent) {
     // [xmin,xmax,ymin,ymax]
     let xymin, xymax;
-    if (fromTrans) {
-    } else {
-      xymin = transform([extent.minX, extent.minY], projection, "EPSG:3857");
-      xymax = transform([extent.maxX, extent.maxY], projection, "EPSG:3857");
+    xymin = [extent.minX, extent.minY];
+    xymax = [extent.maxX, extent.maxY];
 
-      extent = [xymin[0], xymin[1], xymax[0], xymax[1]]; // [left, bottom, right, top]
-    }
     const geojsonObject = {
       type: "FeatureCollection",
       crs: {
         type: "name",
         properties: {
-          name: "EPSG:3857",
+          name: projection,
         },
       },
       features: [
@@ -116,8 +114,7 @@ function BBoxFind() {
 
   // mouse move handler
   const handleMouseClick = (event) => {
-    console.log(transform(event.coordinate, "EPSG:3857", "EPSG:4326"));
-    // setSelectedCoord(transform(event.coordinate, "EPSG:3857", "EPSG:4326"));
+    console.log(event.coordinate);
   };
 
   const handleSubmit = (extent) => {
@@ -139,7 +136,6 @@ function BBoxFind() {
 
   // https://openlayers.org/en/latest/examples/reprojection-by-code.html
   function reproject(code, bbox) {
-    console.log(code, bbox);
     const newProj = getProjection(code);
     const fromLonLat = getTransform("EPSG:4326", newProj);
 
@@ -158,11 +154,23 @@ function BBoxFind() {
     });
     map.setView(newView);
     newView.fit(extent);
+
+    let newPolyExtent = transformExtent(
+      [minX, maxY, maxX, minY],
+      projection,
+      code
+    );
+    setMinX(newPolyExtent[0]);
+    setMinY(newPolyExtent[1]);
+    setMaxX(newPolyExtent[2]);
+    setMaxY(newPolyExtent[3]);
+    setProjection(code);
   }
 
   return (
     <div>
       <div ref={mapElement} className="map"></div>
+      {/* TRANSLATE COORDINATES */}
       <CoordTrans
         curProj={projection}
         extent={[minX, minY, maxX, maxY]}
@@ -174,24 +182,12 @@ function BBoxFind() {
       />
 
       <div className="bot-bar">
-        <div className="clicked-coord-label">
-          <p>{selectedCoord ? toStringXY(selectedCoord, 5) : ""}</p>
-        </div>
-
         {/* BBox extent */}
         <div className="coords-input">
-          <PositionedMenu
-            projection={projection}
-            setProjection={setProjection}
-            minX={minX}
-            maxX={maxX}
-            minY={minY}
-            maxY={maxY}
-            setMinX={setMinX}
-            setMaxX={setMaxX}
-            setMinY={setMinY}
-            setMaxY={setMaxY}
-          />
+          <Typography variant="body1" gutterBottom component="div">
+            {projection}
+          </Typography>
+
           <Box
             component="form"
             sx={{
