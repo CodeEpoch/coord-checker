@@ -14,19 +14,38 @@ import VectorSource from "ol/source/Vector";
 import GeoJSON from "ol/format/GeoJSON";
 import { fromExtent } from "ol/geom/Polygon";
 import { applyTransform } from "ol/extent";
+import Graticule from "ol/layer/Graticule";
+import Stroke from "ol/style/Stroke";
 
 //css
 import Button from "@material-ui/core/Button";
 import { Box, TextField, Typography } from "@material-ui/core";
+import FormControlLabel from "@material-ui/core/FormControlLabel";
+import Checkbox from "@material-ui/core/Checkbox";
 
 function BBoxFind() {
   const [map, setMap] = useState();
   const [featuresLayer, setFeaturesLayer] = useState();
   const [projection, setProjection] = useState("EPSG:4326");
+  const [bboxButtMsg, setBboxButtMsg] = useState("Create BBox");
   const [minX, setMinX] = useState(-64.4136974478633);
   const [maxY, setMaxY] = useState(45.9488267828191);
   const [maxX, setMaxX] = useState(0);
   const [minY, setMinY] = useState(0);
+
+  // graticule layer
+  const [graticule] = useState(
+    new Graticule({
+      // the style to use for the lines, optional.
+      strokeStyle: new Stroke({
+        color: "rgba(255,120,0,0.9)",
+        width: 2,
+        lineDash: [0.5, 4],
+      }),
+      showLabels: true,
+      wrapX: false,
+    })
+  );
 
   // get ref to div element - OpenLayers will render into this div
   const mapElement = useRef();
@@ -132,6 +151,7 @@ function BBoxFind() {
     }
 
     createBBox(extent);
+    setBboxButtMsg("Update BBox");
   };
 
   // https://openlayers.org/en/latest/examples/reprojection-by-code.html
@@ -280,8 +300,24 @@ function BBoxFind() {
                 handleSubmit({ minX, maxY, maxX, minY });
               }}
             >
-              Create BBox
+              {bboxButtMsg}
             </Button>
+            <FormControlLabel
+              style={{ paddingLeft: 30 }}
+              control={
+                <Checkbox
+                  color="default"
+                  onChange={(val) => {
+                    if (val.target.checked) {
+                      map.addLayer(graticule);
+                    } else {
+                      map.removeLayer(graticule);
+                    }
+                  }}
+                />
+              }
+              label="Graticule"
+            />
           </Box>
         </div>
       </div>
